@@ -129,6 +129,7 @@ small diffs on upgrade, and rely on the sandbox for everything we miss.
 - [x] Store the Zalo session encrypted at rest (AES-256-GCM, `src/session.ts`).
 - [x] Implement the minimal MCP tool surface: QR login → account_info →
       list_threads → get_messages (groups) → send_message → mark_read.
-- [ ] Implement the egress-locked sandbox (container + firewall/proxy) —
-      allowlist `.zalo.me`, `.zadn.vn`, `.zaloapp.com`. **Still pending.**
+- [x] Implement the egress-locked sandbox (container + Squid allowlist proxy) —
+      allowlist `.zalo.me`, `.zadn.vn`, `.zaloapp.com`. See `sandbox/`,
+      `docker-compose.yml`, `Dockerfile`, and `sandbox/verify.sh`.
 - [ ] (Optional) Live DM listener support (Zalo has no DM history fetch endpoint).

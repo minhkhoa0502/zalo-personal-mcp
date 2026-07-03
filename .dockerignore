@@ -1,0 +1,12 @@
+node_modules
+dist
+.zalo
+.git
+.env
+.env.*
+*.log
+docs
+sandbox
+Dockerfile
+docker-compose.yml
+.dockerignore

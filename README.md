@@ -87,6 +87,19 @@ success the session is **encrypted at rest** and saved to
 `./.zalo/session.json`. Set `ZALO_SESSION_KEY` before logging in for
 passphrase-based encryption (recommended — see [`.env.example`](.env.example)).
 
+## Running sandboxed (recommended)
+
+For the real security guarantee, run the server in the egress-locked Docker
+sandbox — it can only reach Zalo domains, so a compromised dependency has
+nowhere to exfiltrate. See **[sandbox/README.md](sandbox/README.md)**.
+
+```bash
+docker compose build
+docker compose up -d egress-proxy
+docker compose run --rm -T zalo-mcp node dist/login.js   # one-time QR login
+./sandbox/verify.sh                                       # prove containment
+```
+
 ## Using it with an MCP client
 
 Point your client at the built server. Example (`.mcp.json` / Claude Desktop

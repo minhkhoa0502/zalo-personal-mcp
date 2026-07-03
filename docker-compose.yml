@@ -1,0 +1,47 @@
+name: zalo-personal-mcp
+
+# Two networks. The MCP server is attached ONLY to `internal` (internal: true),
+# which Docker configures with no gateway to the host/internet. Its single route
+# out is the egress-proxy, which straddles both networks.
+networks:
+  egress:
+    driver: bridge
+  internal:
+    driver: bridge
+    internal: true
+
+services:
+  # Zalo-only allowlist forward proxy. This is the security boundary.
+  egress-proxy:
+    # Pin to a digest after first pull for reproducibility:
+    #   docker compose pull egress-proxy && docker inspect --format '{{index .RepoDigests 0}}' ubuntu/squid:6.6-24.04_edge
+    image: ubuntu/squid:6.6-24.04_edge
+    restart: unless-stopped
+    volumes:
+      - ./sandbox/squid.conf:/etc/squid/squid.conf:ro
+    networks:
+      - egress # has internet
+      - internal # reachable by zalo-mcp
+    healthcheck:
+      test: ["CMD", "sh", "-c", "squid -k check || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  zalo-mcp:
+    build: .
+    depends_on:
+      - egress-proxy
+    networks:
+      - internal # NO direct internet — egress only via the proxy
+    environment:
+      HTTPS_PROXY: http://egress-proxy:3128
+      HTTP_PROXY: http://egress-proxy:3128
+      # No NO_PROXY: we want every request to go through the allowlist.
+      ZALO_SESSION_PATH: /app/.zalo/session.json
+      ZALO_SESSION_KEY: ${ZALO_SESSION_KEY:-}
+    volumes:
+      - ./.zalo:/app/.zalo
+    # Required for the MCP stdio transport when launched via `docker compose run`.
+    stdin_open: true
+    tty: false

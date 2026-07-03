@@ -30,4 +30,14 @@ export const config = {
 
   /** zca-js verbose logging. Off by default (would pollute the MCP stdio channel). */
   logging: process.env.ZALO_LOGGING === "true",
+
+  /**
+   * Forward proxy for all outbound traffic (the egress-locked sandbox sets this
+   * to the Squid allowlist proxy). Read from the standard HTTPS_PROXY env var.
+   * When set, undici routes global fetch through it. Security does NOT depend on
+   * this being honored — the sandbox network drops any direct egress — but it is
+   * what makes legitimate Zalo traffic work inside the sandbox.
+   */
+  httpsProxy:
+    process.env.HTTPS_PROXY ?? process.env.https_proxy ?? process.env.HTTP_PROXY ?? null,
 } as const;

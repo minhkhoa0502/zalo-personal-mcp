@@ -14,8 +14,10 @@ import { LoginQRCallbackEventType } from "zca-js";
 import { config } from "./config.js";
 import { buildZalo } from "./zalo-client.js";
 import { saveSession, type StoredSession } from "./session.js";
+import { configureEgress } from "./net.js";
 
 async function main(): Promise<void> {
+  configureEgress();
   const qrPath = resolve(dirname(config.sessionPath), "qr.png");
   const zalo = buildZalo();
 
