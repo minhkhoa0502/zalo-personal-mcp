@@ -121,12 +121,14 @@ small diffs on upgrade, and rely on the sandbox for everything we miss.
 
 - [x] Complete the initial `zca-js` audit → [`docs/audit/zca-js-2.1.2.md`](../audit/zca-js-2.1.2.md)
       (2026-07-04, **SAFE-WITH-CAVEATS**).
-- [ ] Decide vendor-in-repo vs. pinned-npm-dependency based on audit outcome
-      (audit clears both; lean pinned + lockfile hash first, vendor later if desired).
-- [ ] Wire zca-js with `checkUpdate: false` (removes the only non-Zalo egress) and
-      never pass untrusted `polyfill`/`agent`/`custom()` callbacks.
-- [ ] Store the Zalo session encrypted at rest.
+- [x] Pin + lockfile-hash the dependency (`package-lock.json`). Vendoring in-repo
+      remains optional; pinned-npm chosen first.
+- [x] Wire zca-js with `checkUpdate: false` (removes the only non-Zalo egress) and
+      never pass untrusted `polyfill`/`agent`/`custom()` callbacks. (`src/config.ts`,
+      `src/zalo-client.ts`)
+- [x] Store the Zalo session encrypted at rest (AES-256-GCM, `src/session.ts`).
+- [x] Implement the minimal MCP tool surface: QR login → account_info →
+      list_threads → get_messages (groups) → send_message → mark_read.
 - [ ] Implement the egress-locked sandbox (container + firewall/proxy) —
-      allowlist `.zalo.me`, `.zadn.vn`, `.zaloapp.com`.
-- [ ] Implement the minimal MCP tool surface (QR login → list_threads →
-      get_messages → send_message → mark_read).
+      allowlist `.zalo.me`, `.zadn.vn`, `.zaloapp.com`. **Still pending.**
+- [ ] (Optional) Live DM listener support (Zalo has no DM history fetch endpoint).
