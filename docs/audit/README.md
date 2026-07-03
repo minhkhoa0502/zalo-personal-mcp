@@ -8,4 +8,7 @@ report alongside the upgrade PR.
 
 ## Reports
 
-- `zca-js-2.1.2.md` — _pending (audit in progress)_
+- [`zca-js-2.1.2.md`](zca-js-2.1.2.md) — **SAFE-WITH-CAVEATS** (audited 2026-07-04).
+  No exfiltration, dynamic exec, obfuscation, or non-Zalo egress (except a gated,
+  credential-free npm version check). Safe to vendor with pinning + `checkUpdate: false`
+  + egress allowlist.

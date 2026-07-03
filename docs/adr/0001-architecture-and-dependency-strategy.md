@@ -119,7 +119,14 @@ small diffs on upgrade, and rely on the sandbox for everything we miss.
 
 ## Follow-ups
 
-- [ ] Complete the initial `zca-js` audit → `docs/audit/`.
-- [ ] Decide vendor-in-repo vs. pinned-npm-dependency based on audit outcome.
-- [ ] Implement the egress-locked sandbox (container + firewall/proxy).
-- [ ] Implement the minimal MCP tool surface.
+- [x] Complete the initial `zca-js` audit → [`docs/audit/zca-js-2.1.2.md`](../audit/zca-js-2.1.2.md)
+      (2026-07-04, **SAFE-WITH-CAVEATS**).
+- [ ] Decide vendor-in-repo vs. pinned-npm-dependency based on audit outcome
+      (audit clears both; lean pinned + lockfile hash first, vendor later if desired).
+- [ ] Wire zca-js with `checkUpdate: false` (removes the only non-Zalo egress) and
+      never pass untrusted `polyfill`/`agent`/`custom()` callbacks.
+- [ ] Store the Zalo session encrypted at rest.
+- [ ] Implement the egress-locked sandbox (container + firewall/proxy) —
+      allowlist `.zalo.me`, `.zadn.vn`, `.zaloapp.com`.
+- [ ] Implement the minimal MCP tool surface (QR login → list_threads →
+      get_messages → send_message → mark_read).
