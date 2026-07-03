@@ -48,31 +48,72 @@ See [SECURITY.md](SECURITY.md). The short version:
 
 ## Status
 
-🚧 **Early scaffolding.** The dependency audit and MCP tool implementation are in
-progress. Not yet functional.
+✅ **Working — first tools implemented.** QR login + session persistence and five
+MCP tools are functional. The `zca-js@2.1.2` dependency has been audited
+([report](docs/audit/zca-js-2.1.2.md)).
 
-## Planned MCP tools
+## MCP tools
 
 | Tool | Description |
 |------|-------------|
-| `list_threads` | List recent conversations (DMs and groups) |
-| `get_messages` | Fetch recent messages from a thread |
-| `send_message` | Send a text message to a user or group |
-| `mark_read` | Mark a thread as read |
-| `send_media` | Send an image/file (later) |
+| `zalo_account_info` | Return the logged-in account's own profile |
+| `zalo_list_threads` | List friends (DMs) and groups, with their ids |
+| `zalo_get_messages` | Fetch recent **group** message history |
+| `zalo_send_message` | Send a plain-text message to a user or group |
+| `zalo_mark_read` | Clear the unread marker on a thread |
 
-Exact surface is intentionally minimal — we expose only what's needed to keep the
-attack surface small.
+The surface is intentionally minimal to keep the attack surface small.
+
+> [!NOTE]
+> **DM history is not fetchable.** The Zalo Web protocol only exposes history for
+> *groups* (`getGroupChatHistory`). One-to-one messages arrive through the
+> realtime listener, not a fetch endpoint, so `zalo_get_messages` supports groups
+> only and returns an explanation for `user` threads. Live DM streaming is a
+> possible future addition.
+
+## Setup
+
+Requires Node.js ≥ 20.
+
+```bash
+npm install          # installs pinned deps + writes package-lock.json (integrity hashes)
+npm run build        # compile TypeScript to dist/
+npm run login        # one-time: scan the QR with the Zalo mobile app
+```
+
+`npm run login` writes a QR image next to your session file (default
+`./.zalo/qr.png`); open it and scan via the Zalo app (Settings → scan QR). On
+success the session is **encrypted at rest** and saved to
+`./.zalo/session.json`. Set `ZALO_SESSION_KEY` before logging in for
+passphrase-based encryption (recommended — see [`.env.example`](.env.example)).
+
+## Using it with an MCP client
+
+Point your client at the built server. Example (`.mcp.json` / Claude Desktop
+`mcpServers`):
+
+```json
+{
+  "mcpServers": {
+    "zalo": {
+      "command": "node",
+      "args": ["/absolute/path/to/zalo-personal-mcp/dist/index.js"],
+      "env": {
+        "ZALO_SESSION_PATH": "/absolute/path/to/zalo-personal-mcp/.zalo/session.json",
+        "ZALO_SESSION_KEY": "your-strong-passphrase"
+      }
+    }
+  }
+}
+```
 
 ## Development
 
 ```bash
-npm install
-npm run build
-npm run dev
+npm run dev          # tsc --watch
+npm run typecheck    # type-check only
+npm run audit:deps   # npm audit (runtime deps)
 ```
-
-Requires Node.js ≥ 20.
 
 ## License
 

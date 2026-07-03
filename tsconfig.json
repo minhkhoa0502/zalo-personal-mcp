@@ -1,8 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    // Bundler resolution: zca-js's type entry re-exports a directory
+    // (`export * from "./dist"`), which strict NodeNext resolution rejects.
+    // We still emit Node-compatible ESM (all relative imports use .js).
+    "moduleResolution": "Bundler",
+    "types": ["node"],
     "outDir": "dist",
     "rootDir": "src",
     "strict": true,
