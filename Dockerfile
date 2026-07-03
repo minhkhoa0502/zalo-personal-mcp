@@ -20,5 +20,6 @@ COPY --from=build /app/dist ./dist
 RUN mkdir -p /app/.zalo && chown -R node:node /app/.zalo
 USER node
 
-# Default: run the MCP server (stdio). Override with `node dist/login.js` to log in.
-ENTRYPOINT ["node", "dist/index.js"]
+# Default: run the MCP server (stdio). Use CMD (not ENTRYPOINT) so it can be
+# overridden, e.g. `docker compose run zalo-mcp node dist/login.js`.
+CMD ["node", "dist/index.js"]

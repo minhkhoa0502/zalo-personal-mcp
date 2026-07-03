@@ -80,10 +80,12 @@ export function registerTools(server: McpServer): void {
         if (includeGroups) {
           const groups = await api.getAllGroups();
           const ids = Object.keys(groups?.gridVerMap ?? {});
-          let names: Record<string, { name?: string }> = {};
-          if (ids.length > 0) {
-            const info = await api.getGroupInfo(ids);
-            names = (info?.gridInfoMap ?? {}) as Record<string, { name?: string }>;
+          // Zalo rejects getGroupInfo with more than 100 ids at once, so chunk.
+          const names: Record<string, { name?: string }> = {};
+          const BATCH = 50;
+          for (let i = 0; i < ids.length; i += BATCH) {
+            const info = await api.getGroupInfo(ids.slice(i, i + BATCH));
+            Object.assign(names, info?.gridInfoMap ?? {});
           }
           result.groups = ids.map((id) => ({ id, name: names[id]?.name ?? "(unknown)" }));
         }

@@ -9,6 +9,7 @@
  * This is a separate CLI because QR scanning is interactive and cannot happen
  * over the MCP stdio transport.
  */
+import { writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { LoginQRCallbackEventType } from "zca-js";
 import { config } from "./config.js";
@@ -30,14 +31,18 @@ async function main(): Promise<void> {
     (event) => {
       switch (event.type) {
         case LoginQRCallbackEventType.QRCodeGenerated:
-          console.log(`QR code saved to:\n  ${qrPath}\n`);
-          console.log("Open that image and scan it in the Zalo app (you have ~2 minutes).\n");
+          // When a callback is provided, zca-js does NOT write the QR file
+          // itself — it hands us the base64 image, so we write it here.
+          writeFileSync(qrPath, Buffer.from(event.data.image, "base64"));
+          console.log(`QR code written to:\n  ${qrPath}\n`);
+          console.log("Open that image and scan it in the Zalo app (Settings → scan QR).");
+          console.log("You have ~100 seconds per code before it expires.\n");
           break;
         case LoginQRCallbackEventType.QRCodeScanned:
           console.log("QR scanned — confirm the login on your phone…");
           break;
         case LoginQRCallbackEventType.QRCodeExpired:
-          console.error("QR code expired. Re-run `npm run login`.");
+          console.error("QR code expired before it was scanned. Re-run `make login`.");
           break;
         case LoginQRCallbackEventType.QRCodeDeclined:
           console.error("Login was declined on the phone.");

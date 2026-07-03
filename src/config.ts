@@ -19,7 +19,10 @@ export const config = {
    * which protects against casual reading but not against someone with full
    * filesystem access. A passphrase you keep elsewhere is stronger.
    */
-  sessionKey: process.env.ZALO_SESSION_KEY ?? null,
+  // Treat empty/whitespace (e.g. an unset compose `${ZALO_SESSION_KEY:-}`) as
+  // "not provided" so we fall back to keyfile encryption instead of a broken
+  // empty-passphrase scrypt path.
+  sessionKey: process.env.ZALO_SESSION_KEY?.trim() ? process.env.ZALO_SESSION_KEY : null,
 
   /**
    * zca-js options. checkUpdate is forced off: per the dependency audit it is

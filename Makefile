@@ -14,7 +14,7 @@ up:
 	docker compose up -d egress-proxy
 
 ## login: one-time interactive QR login inside the sandbox (writes ./.zalo/qr.png)
-login: up
+login: build up
 	docker compose run --rm -T zalo-mcp node dist/login.js
 
 ## verify: prove the sandbox actually contains egress to Zalo only
