@@ -94,11 +94,14 @@ sandbox — it can only reach Zalo domains, so a compromised dependency has
 nowhere to exfiltrate. See **[sandbox/README.md](sandbox/README.md)**.
 
 ```bash
-docker compose build
-docker compose up -d egress-proxy
-docker compose run --rm -T zalo-mcp node dist/login.js   # one-time QR login
-./sandbox/verify.sh                                       # prove containment
+make build     # build the server image
+make login     # one-time QR login inside the sandbox (scan ./.zalo/qr.png)
+make verify    # prove egress is contained to Zalo only
 ```
+
+`make help` lists all targets (`build`, `up`, `login`, `verify`, `logs`,
+`down`, `clean`). The equivalent raw commands are in
+[sandbox/README.md](sandbox/README.md).
 
 ## Using it with an MCP client
 
