@@ -502,4 +502,77 @@ export function registerTools(server: McpServer): void {
         });
       }),
   );
+
+  server.registerTool(
+    "zalo_send_link",
+    {
+      title: "Send a Zalo link (with preview)",
+      description: "Send a URL to a user or group; Zalo renders a link preview.",
+      inputSchema: {
+        threadId: z.string().describe("Recipient id"),
+        threadType: threadType,
+        link: z.string().url().describe("URL to send"),
+        message: z.string().optional().describe("Optional text with the link"),
+      },
+    },
+    ({ threadId, threadType: kind, link, message }) =>
+      guard(async () => {
+        const api = await getApi();
+        return ok(await api.sendLink({ link, msg: message }, threadId, toThreadType(kind)));
+      }),
+  );
+
+  server.registerTool(
+    "zalo_send_sticker",
+    {
+      title: "Send a Zalo sticker",
+      description:
+        "Search stickers by keyword and send the best match to a user or group.",
+      inputSchema: {
+        threadId: z.string().describe("Recipient id"),
+        threadType: threadType,
+        keyword: z.string().describe("Sticker search keyword (e.g. 'hi', 'love')"),
+      },
+    },
+    ({ threadId, threadType: kind, keyword }) =>
+      guard(async () => {
+        const api = await getApi();
+        const results = await api.searchSticker(keyword);
+        if (!results || results.length === 0) return fail(`No stickers found for "${keyword}"`);
+        const s = results[0] as { type: number; cate_id: number; sticker_id: number };
+        const res = await api.sendSticker(
+          { id: s.sticker_id, cateId: s.cate_id, type: s.type },
+          threadId,
+          toThreadType(kind),
+        );
+        return ok({ keyword, sent: { id: s.sticker_id, cateId: s.cate_id }, result: res });
+      }),
+  );
+
+  server.registerTool(
+    "zalo_send_bank_card",
+    {
+      title: "Send a Zalo bank card",
+      description:
+        "Send a bank-transfer card (shows account details / VietQR). binBank is the " +
+        "6-digit bank BIN (e.g. Vietcombank 970436, Techcombank 970407, MB 970422).",
+      inputSchema: {
+        threadId: z.string().describe("Recipient id"),
+        threadType: threadType,
+        binBank: z.number().int().describe("Bank BIN, e.g. 970436 for Vietcombank"),
+        accountNumber: z.string().describe("Bank account number"),
+        accountName: z.string().optional().describe("Account holder name"),
+      },
+    },
+    ({ threadId, threadType: kind, binBank, accountNumber, accountName }) =>
+      guard(async () => {
+        const api = await getApi();
+        const res = await api.sendBankCard(
+          { binBank: binBank as never, numAccBank: accountNumber, nameAccBank: accountName },
+          threadId,
+          toThreadType(kind),
+        );
+        return ok({ result: res });
+      }),
+  );
 }

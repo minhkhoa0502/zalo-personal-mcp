@@ -69,6 +69,9 @@ MCP tools are functional. The `zca-js@2.1.2` dependency has been audited
 | `zalo_get_user_info` | Look up profile info for one or more user ids |
 | `zalo_find_user` | Find a user by phone number |
 | `zalo_group_members` | List a group's member profiles |
+| `zalo_send_link` | Send a URL with a link preview |
+| `zalo_send_sticker` | Search by keyword and send a sticker |
+| `zalo_send_bank_card` | Send a bank-transfer card (account details / VietQR) |
 
 The surface is intentionally minimal to keep the attack surface small.
 
