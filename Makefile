@@ -21,6 +21,18 @@ login: build up
 verify: up
 	./sandbox/verify.sh
 
+## daemon: start the background message-capture daemon (logs incoming messages)
+daemon: build up
+	docker compose up -d zalo-daemon
+
+## daemon-logs: tail the daemon logs
+daemon-logs:
+	docker compose logs -f zalo-daemon
+
+## daemon-stop: stop the message-capture daemon
+daemon-stop:
+	docker compose stop zalo-daemon
+
 ## logs: tail the egress-proxy (Squid) logs
 logs:
 	docker compose logs -f egress-proxy

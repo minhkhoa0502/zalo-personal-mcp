@@ -62,8 +62,24 @@ MCP tools are functional. The `zca-js@2.1.2` dependency has been audited
 | `zalo_send_message` | Send a plain-text message to a user or group |
 | `zalo_mark_read` | Clear the unread marker on a thread |
 | `zalo_listen` | Open the realtime listener for a window; return incoming messages (live + on-connect backlog) |
+| `zalo_recent_messages` | Read messages captured by the background daemon (last N minutes) — the reliable "what did I miss?" |
 
 The surface is intentionally minimal to keep the attack surface small.
+
+### Background message capture (daemon)
+
+`zalo_listen` only sees messages during its call window. For durable "what did I
+receive recently?", run the **daemon**, which owns the listener and appends every
+incoming message to `.zalo/messages.jsonl` (surviving restarts):
+
+```bash
+make daemon        # start it (add ZALO_SELF_LISTEN=true to also capture your own)
+make daemon-logs   # watch it
+make daemon-stop   # stop it
+```
+
+Then `zalo_recent_messages` reads that log. Note: Zalo allows only one web
+listener per account, so **don't use `zalo_listen` while the daemon is running.**
 
 > [!NOTE]
 > **DM history is not fetchable.** The Zalo Web protocol only exposes history for

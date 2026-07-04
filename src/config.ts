@@ -3,7 +3,7 @@
  * See .env.example for documentation of each option.
  */
 import { homedir } from "node:os";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 
 function expandHome(p: string): string {
   return p.startsWith("~") ? resolve(homedir(), p.slice(1).replace(/^\/+/, "")) : resolve(p);
@@ -43,4 +43,18 @@ export const config = {
    */
   httpsProxy:
     process.env.HTTPS_PROXY ?? process.env.https_proxy ?? process.env.HTTP_PROXY ?? null,
+
+  /**
+   * Where the background daemon appends captured messages (JSONL). The
+   * zalo_recent_messages tool reads this file. Defaults next to the session.
+   */
+  messageLogPath: process.env.ZALO_MESSAGE_LOG
+    ? expandHome(process.env.ZALO_MESSAGE_LOG)
+    : resolve(dirname(expandHome(process.env.ZALO_SESSION_PATH ?? "./.zalo/session.json")), "messages.jsonl"),
+
+  /**
+   * Whether the listener/daemon emits your OWN messages too. zca-js drops them
+   * before emitting when false. Off by default (usually you want others' msgs).
+   */
+  selfListen: process.env.ZALO_SELF_LISTEN === "true",
 } as const;

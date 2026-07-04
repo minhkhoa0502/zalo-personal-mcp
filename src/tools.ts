@@ -9,25 +9,11 @@
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getApi, getListenerApi, toThreadType, ThreadType } from "./zalo-client.js";
+import { getApi, getListenerApi, toThreadType } from "./zalo-client.js";
+import { config } from "./config.js";
+import { readRecent, shapeMessage, logExists } from "./message-log.js";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-/** Normalize a listener Message into a compact, JSON-friendly record. */
-function shapeMessage(msg: any, source: "live" | "backlog") {
-  const d = msg?.data ?? {};
-  return {
-    source,
-    threadType: msg?.type === ThreadType.Group ? "group" : "user",
-    threadId: msg?.threadId,
-    isSelf: !!msg?.isSelf,
-    fromId: d.uidFrom,
-    fromName: d.dName,
-    ts: d.ts,
-    msgId: d.msgId,
-    content: d.content,
-  };
-}
 
 type TextResult = {
   content: { type: "text"; text: string }[];
@@ -211,9 +197,9 @@ export function registerTools(server: McpServer): void {
         let connected = false;
         let errored: string | null = null;
 
-        const onMessage = (m: any) => collected.push(shapeMessage(m, "live"));
+        const onMessage = (m: any) => collected.push(shapeMessage(m, "live", Date.now()));
         const onOld = (msgs: any[]) =>
-          (msgs ?? []).forEach((m) => collected.push(shapeMessage(m, "backlog")));
+          (msgs ?? []).forEach((m) => collected.push(shapeMessage(m, "backlog", Date.now())));
 
         api.listener.on("message", onMessage);
         api.listener.on("old_messages", onOld);
@@ -240,6 +226,41 @@ export function registerTools(server: McpServer): void {
           connected,
           error: errored,
           windowSeconds: seconds,
+          count: messages.length,
+          messages,
+        });
+      }),
+  );
+
+  server.registerTool(
+    "zalo_recent_messages",
+    {
+      title: "Get recently received Zalo messages",
+      description:
+        "Read messages captured by the background daemon — the reliable way to " +
+        "answer 'what did I receive recently?'. Requires the daemon running " +
+        "(`make daemon`); it owns the listener and logs every message. If the " +
+        "daemon isn't running, this returns whatever was logged previously — use " +
+        "zalo_listen for an ad-hoc live window instead.",
+      inputSchema: {
+        sinceMinutes: z
+          .number()
+          .min(1)
+          .max(1440)
+          .default(5)
+          .describe("Only messages from the last N minutes"),
+        limit: z.number().int().min(1).max(500).default(50).describe("Max messages to return"),
+        threadId: z.string().optional().describe("Filter to one thread id"),
+      },
+    },
+    ({ sinceMinutes, limit, threadId }) =>
+      guard(async () => {
+        const sinceMs = Date.now() - sinceMinutes * 60 * 1000;
+        const messages = readRecent({ sinceMs, limit, threadId });
+        return ok({
+          daemonRunning: logExists(),
+          logPath: config.messageLogPath,
+          sinceMinutes,
           count: messages.length,
           messages,
         });

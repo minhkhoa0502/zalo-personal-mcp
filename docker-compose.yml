@@ -30,6 +30,9 @@ services:
 
   zalo-mcp:
     build: .
+    # Shared image tag so zalo-mcp and zalo-daemon never run divergent builds —
+    # one `docker compose build` updates both.
+    image: zalo-personal-mcp:local
     depends_on:
       - egress-proxy
     networks:
@@ -39,9 +42,32 @@ services:
       HTTP_PROXY: http://egress-proxy:3128
       # No NO_PROXY: we want every request to go through the allowlist.
       ZALO_SESSION_PATH: /app/.zalo/session.json
+      ZALO_MESSAGE_LOG: /app/.zalo/messages.jsonl
       ZALO_SESSION_KEY: ${ZALO_SESSION_KEY:-}
     volumes:
       - ./.zalo:/app/.zalo
     # Required for the MCP stdio transport when launched via `docker compose run`.
     stdin_open: true
     tty: false
+
+  # Background message-capture daemon: owns the listener and logs every incoming
+  # message to /app/.zalo/messages.jsonl. Optional — start with `make daemon`.
+  # Only one web listener per account, so don't run zalo_listen while this is up.
+  zalo-daemon:
+    build: .
+    image: zalo-personal-mcp:local # same image as zalo-mcp (see note above)
+    depends_on:
+      - egress-proxy
+    command: ["node", "dist/daemon.js"]
+    networks:
+      - internal # NO direct internet — egress only via the proxy
+    environment:
+      HTTPS_PROXY: http://egress-proxy:3128
+      HTTP_PROXY: http://egress-proxy:3128
+      ZALO_SESSION_PATH: /app/.zalo/session.json
+      ZALO_MESSAGE_LOG: /app/.zalo/messages.jsonl
+      ZALO_SESSION_KEY: ${ZALO_SESSION_KEY:-}
+      ZALO_SELF_LISTEN: ${ZALO_SELF_LISTEN:-false}
+    volumes:
+      - ./.zalo:/app/.zalo
+    restart: unless-stopped
