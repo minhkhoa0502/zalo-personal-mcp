@@ -575,4 +575,141 @@ export function registerTools(server: McpServer): void {
         return ok({ result: res });
       }),
   );
+
+  // --- Group management (mutating) ------------------------------------------
+
+  server.registerTool(
+    "zalo_create_group",
+    {
+      title: "Create a Zalo group",
+      description: "Create a new group with the given members. Creates a real group.",
+      inputSchema: {
+        name: z.string().optional().describe("Group name"),
+        memberIds: z.array(z.string()).min(1).describe("User ids to add (at least one)"),
+      },
+    },
+    ({ name, memberIds }) =>
+      guard(async () => {
+        const api = await getApi();
+        return ok(await api.createGroup({ name, members: memberIds }));
+      }),
+  );
+
+  server.registerTool(
+    "zalo_rename_group",
+    {
+      title: "Rename a Zalo group",
+      description: "Change a group's name.",
+      inputSchema: {
+        groupId: z.string().describe("Group id"),
+        name: z.string().min(1).describe("New group name"),
+      },
+    },
+    ({ groupId, name }) =>
+      guard(async () => {
+        const api = await getApi();
+        return ok(await api.changeGroupName(name, groupId));
+      }),
+  );
+
+  server.registerTool(
+    "zalo_add_group_members",
+    {
+      title: "Add members to a Zalo group",
+      description: "Add one or more users to a group.",
+      inputSchema: {
+        groupId: z.string().describe("Group id"),
+        memberIds: z.array(z.string()).min(1).describe("User ids to add"),
+      },
+    },
+    ({ groupId, memberIds }) =>
+      guard(async () => {
+        const api = await getApi();
+        return ok(await api.addUserToGroup(memberIds, groupId));
+      }),
+  );
+
+  server.registerTool(
+    "zalo_remove_group_members",
+    {
+      title: "Remove members from a Zalo group",
+      description: "Remove one or more users from a group (requires admin rights).",
+      inputSchema: {
+        groupId: z.string().describe("Group id"),
+        memberIds: z.array(z.string()).min(1).describe("User ids to remove"),
+      },
+    },
+    ({ groupId, memberIds }) =>
+      guard(async () => {
+        const api = await getApi();
+        return ok(await api.removeUserFromGroup(memberIds, groupId));
+      }),
+  );
+
+  // --- Friend management (mutating) -----------------------------------------
+
+  server.registerTool(
+    "zalo_send_friend_request",
+    {
+      title: "Send a Zalo friend request",
+      description: "Send a friend request to a user with a greeting message.",
+      inputSchema: {
+        userId: z.string().describe("User id to friend"),
+        message: z.string().default("Hi, let's connect on Zalo.").describe("Greeting message"),
+      },
+    },
+    ({ userId, message }) =>
+      guard(async () => {
+        const api = await getApi();
+        return ok(await api.sendFriendRequest(message, userId));
+      }),
+  );
+
+  server.registerTool(
+    "zalo_accept_friend_request",
+    {
+      title: "Accept a Zalo friend request",
+      description: "Accept a pending friend request from a user.",
+      inputSchema: { userId: z.string().describe("User id whose request to accept") },
+    },
+    ({ userId }) =>
+      guard(async () => {
+        const api = await getApi();
+        return ok(await api.acceptFriendRequest(userId));
+      }),
+  );
+
+  server.registerTool(
+    "zalo_remove_friend",
+    {
+      title: "Remove a Zalo friend",
+      description: "Unfriend a user. Irreversible (you'd need to re-friend).",
+      inputSchema: { userId: z.string().describe("User id to unfriend") },
+    },
+    ({ userId }) =>
+      guard(async () => {
+        const api = await getApi();
+        return ok(await api.removeFriend(userId));
+      }),
+  );
+
+  server.registerTool(
+    "zalo_set_friend_alias",
+    {
+      title: "Set or clear a Zalo friend alias",
+      description: "Set a custom alias (nickname) for a friend, or clear it with an empty alias.",
+      inputSchema: {
+        userId: z.string().describe("Friend's user id"),
+        alias: z.string().describe("Alias to set; empty string clears it"),
+      },
+    },
+    ({ userId, alias }) =>
+      guard(async () => {
+        const api = await getApi();
+        const res = alias.length > 0
+          ? await api.changeFriendAlias(alias, userId)
+          : await api.removeFriendAlias(userId);
+        return ok({ cleared: alias.length === 0, result: res });
+      }),
+  );
 }

@@ -72,8 +72,20 @@ MCP tools are functional. The `zca-js@2.1.2` dependency has been audited
 | `zalo_send_link` | Send a URL with a link preview |
 | `zalo_send_sticker` | Search by keyword and send a sticker |
 | `zalo_send_bank_card` | Send a bank-transfer card (account details / VietQR) |
+| `zalo_create_group` | Create a new group with members |
+| `zalo_rename_group` | Change a group's name |
+| `zalo_add_group_members` | Add members to a group |
+| `zalo_remove_group_members` | Remove members from a group (admin) |
+| `zalo_send_friend_request` | Send a friend request |
+| `zalo_accept_friend_request` | Accept a pending friend request |
+| `zalo_remove_friend` | Unfriend a user |
+| `zalo_set_friend_alias` | Set or clear a friend's alias |
 
-The surface is intentionally minimal to keep the attack surface small.
+> [!CAUTION]
+> The group/friend tools **mutate real contacts and groups** and some are
+> irreversible (unfriend, remove member). They were verified as wired and
+> type-safe; only the reversible alias tool was executed against a live account
+> during testing. Use them deliberately.
 
 ### Background message capture (daemon)
 
