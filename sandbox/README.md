@@ -87,6 +87,8 @@ and removes the container on exit. The `egress-proxy` dependency stays up.
   ```
 - The allowlist lives in [`squid.conf`](squid.conf); widen it only with hosts
   confirmed Zalo-owned in the dependency audit.
-- The live DM **listener** (a future feature) uses a WebSocket via `ws`, which
-  does not honor `HTTPS_PROXY` automatically — it will need an explicit proxy
-  agent before it can run inside this sandbox.
+- The live DM **listener** (`zalo_listen`) uses a WebSocket via `ws`, which does
+  not honor `HTTPS_PROXY`. We pass it an explicit `HttpsProxyAgent` pointed at
+  the Squid proxy (see `buildZalo()` in `src/zalo-client.ts`), so it too is
+  contained to Zalo hosts. Verified: the listener connects from the internal-only
+  network, which is only possible through the proxy.

@@ -9,7 +9,25 @@
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getApi, toThreadType } from "./zalo-client.js";
+import { getApi, toThreadType, ThreadType } from "./zalo-client.js";
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** Normalize a listener Message into a compact, JSON-friendly record. */
+function shapeMessage(msg: any, source: "live" | "backlog") {
+  const d = msg?.data ?? {};
+  return {
+    source,
+    threadType: msg?.type === ThreadType.Group ? "group" : "user",
+    threadId: msg?.threadId,
+    isSelf: !!msg?.isSelf,
+    fromId: d.uidFrom,
+    fromName: d.dName,
+    ts: d.ts,
+    msgId: d.msgId,
+    content: d.content,
+  };
+}
 
 type TextResult = {
   content: { type: "text"; text: string }[];
@@ -157,6 +175,72 @@ export function registerTools(server: McpServer): void {
         const api = await getApi();
         const res = await api.removeUnreadMark(threadId, toThreadType(kind));
         return ok(res);
+      }),
+  );
+
+  server.registerTool(
+    "zalo_listen",
+    {
+      title: "Listen for incoming Zalo messages",
+      description:
+        "Open the realtime listener for a fixed window and return the messages seen. " +
+        "This is the ONLY way to read incoming DMs (Zalo has no DM history fetch). " +
+        "On connect Zalo also pushes a backlog of recent messages received while " +
+        "offline (marked source='backlog'); messages arriving during the window are " +
+        "source='live'. Returns after `seconds` elapse.",
+      inputSchema: {
+        seconds: z
+          .number()
+          .int()
+          .min(3)
+          .max(120)
+          .default(20)
+          .describe("How long to listen before returning"),
+        includeSelf: z
+          .boolean()
+          .default(false)
+          .describe("Include messages you sent yourself"),
+      },
+    },
+    ({ seconds, includeSelf }) =>
+      guard(async () => {
+        const api = await getApi();
+        const collected: ReturnType<typeof shapeMessage>[] = [];
+        let connected = false;
+        let errored: string | null = null;
+
+        const onMessage = (m: any) => collected.push(shapeMessage(m, "live"));
+        const onOld = (msgs: any[]) =>
+          (msgs ?? []).forEach((m) => collected.push(shapeMessage(m, "backlog")));
+
+        api.listener.on("message", onMessage);
+        api.listener.on("old_messages", onOld);
+        api.listener.on("connected", () => {
+          connected = true;
+        });
+        api.listener.on("error", (e: unknown) => {
+          errored = e instanceof Error ? e.message : String(e);
+        });
+
+        try {
+          api.listener.start();
+          await sleep(seconds * 1000);
+        } finally {
+          try {
+            api.listener.stop();
+          } catch {
+            /* ignore */
+          }
+        }
+
+        const messages = collected.filter((m) => includeSelf || !m.isSelf);
+        return ok({
+          connected,
+          error: errored,
+          windowSeconds: seconds,
+          count: messages.length,
+          messages,
+        });
       }),
   );
 }

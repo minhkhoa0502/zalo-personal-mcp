@@ -61,15 +61,19 @@ MCP tools are functional. The `zca-js@2.1.2` dependency has been audited
 | `zalo_get_messages` | Fetch recent **group** message history |
 | `zalo_send_message` | Send a plain-text message to a user or group |
 | `zalo_mark_read` | Clear the unread marker on a thread |
+| `zalo_listen` | Open the realtime listener for a window; return incoming messages (live + on-connect backlog) |
 
 The surface is intentionally minimal to keep the attack surface small.
 
 > [!NOTE]
 > **DM history is not fetchable.** The Zalo Web protocol only exposes history for
 > *groups* (`getGroupChatHistory`). One-to-one messages arrive through the
-> realtime listener, not a fetch endpoint, so `zalo_get_messages` supports groups
-> only and returns an explanation for `user` threads. Live DM streaming is a
-> possible future addition.
+> realtime listener, not a fetch endpoint. So `zalo_get_messages` supports groups
+> only, and **`zalo_listen`** is the way to read incoming DMs — it opens the
+> WebSocket listener for a fixed window and returns what arrives (plus the backlog
+> Zalo pushes on connect). The listener runs inside the sandbox by tunnelling its
+> WebSocket through the Squid proxy (`ws` uses an `http.Agent`, so we pass it an
+> `HttpsProxyAgent`).
 
 ## Setup
 

@@ -132,4 +132,6 @@ small diffs on upgrade, and rely on the sandbox for everything we miss.
 - [x] Implement the egress-locked sandbox (container + Squid allowlist proxy) —
       allowlist `.zalo.me`, `.zadn.vn`, `.zaloapp.com`. See `sandbox/`,
       `docker-compose.yml`, `Dockerfile`, and `sandbox/verify.sh`.
-- [ ] (Optional) Live DM listener support (Zalo has no DM history fetch endpoint).
+- [x] Live DM listener support (`zalo_listen`) — WebSocket tunnelled through the
+      Squid proxy via `HttpsProxyAgent` so it runs inside the sandbox. This is the
+      only way to read incoming DMs (no DM history fetch endpoint exists).
