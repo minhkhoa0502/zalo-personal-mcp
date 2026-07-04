@@ -9,7 +9,7 @@
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getApi, toThreadType, ThreadType } from "./zalo-client.js";
+import { getApi, getListenerApi, toThreadType, ThreadType } from "./zalo-client.js";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -204,7 +204,9 @@ export function registerTools(server: McpServer): void {
     },
     ({ seconds, includeSelf }) =>
       guard(async () => {
-        const api = await getApi();
+        // A dedicated listener api whose selfListen matches includeSelf — with
+        // selfListen off, zca-js never emits your own messages at all.
+        const api = await getListenerApi(includeSelf);
         const collected: ReturnType<typeof shapeMessage>[] = [];
         let connected = false;
         let errored: string | null = null;

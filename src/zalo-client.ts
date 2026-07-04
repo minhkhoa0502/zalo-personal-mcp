@@ -14,7 +14,7 @@ export type ZaloApi = API;
 
 let cached: ZaloApi | null = null;
 
-export function buildZalo(): Zalo {
+export function buildZalo(opts?: { selfListen?: boolean }): Zalo {
   // The realtime listener uses a `ws` WebSocket, which takes an http.Agent —
   // NOT undici's dispatcher. So inside the sandbox (no direct egress) we give
   // it an HttpsProxyAgent pointed at the Squid allowlist proxy, mirroring what
@@ -27,18 +27,14 @@ export function buildZalo(): Zalo {
     // Hardened per docs/audit/zca-js-2.1.2.md:
     checkUpdate: config.checkUpdate, // false → no non-Zalo egress
     logging: config.logging, // off → keeps MCP stdio clean
-    selfListen: false,
+    // selfListen must be true for the listener to emit YOUR OWN messages;
+    // zca-js drops them before emitting when this is false.
+    selfListen: opts?.selfListen ?? false,
     agent,
   });
 }
 
-/**
- * Return a logged-in API, restoring from the saved session. Cached for the
- * process lifetime. Throws a clear, actionable error if there is no session.
- */
-export async function getApi(): Promise<ZaloApi> {
-  if (cached) return cached;
-
+async function loginFromSession(opts?: { selfListen?: boolean }): Promise<ZaloApi> {
   const session = loadSession();
   if (!session) {
     throw new Error(
@@ -46,15 +42,31 @@ export async function getApi(): Promise<ZaloApi> {
         "then restart the MCP server.",
     );
   }
-
-  const zalo = buildZalo();
-  cached = await zalo.login({
+  const zalo = buildZalo(opts);
+  return zalo.login({
     imei: session.imei,
     cookie: session.cookie as never,
     userAgent: session.userAgent,
     language: session.language,
   });
+}
+
+/**
+ * Return a logged-in API for request/response tools, restoring from the saved
+ * session. Cached for the process lifetime (selfListen off).
+ */
+export async function getApi(): Promise<ZaloApi> {
+  if (cached) return cached;
+  cached = await loginFromSession();
   return cached;
+}
+
+/**
+ * A fresh (uncached) logged-in API dedicated to the listener, so its
+ * `selfListen` can differ from the request api without affecting it.
+ */
+export async function getListenerApi(selfListen: boolean): Promise<ZaloApi> {
+  return loginFromSession({ selfListen });
 }
 
 /** Map a user-facing thread-type string to the zca-js enum. */
