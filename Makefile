@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help build up login verify down logs clean
+.PHONY: help build up login verify rebuild daemon daemon-logs daemon-stop down logs clean
 
 ## help: list available targets
 help:
@@ -20,6 +20,20 @@ login: build up
 ## verify: prove the sandbox actually contains egress to Zalo only
 verify: up
 	./sandbox/verify.sh
+
+## rebuild: rebuild the image after code changes, then reconnect the client (steps printed)
+rebuild:
+	docker compose build
+	@if [ -n "$$(docker compose ps -q zalo-daemon 2>/dev/null)" ]; then \
+		echo "-> daemon is running; recreating it with the new image"; \
+		echo "   (ensure ZALO_SESSION_KEY is set in this shell if you use a passphrase)"; \
+		docker compose up -d --force-recreate --no-deps zalo-daemon; \
+	fi
+	@echo ""
+	@echo "OK: image rebuilt. A NEW Claude Code session picks it up automatically."
+	@echo "To update a CURRENT session (e.g. to see new/changed tools), reconnect:"
+	@echo "  run  /mcp  in Claude Code  ->  select 'zalo'  ->  reconnect"
+	@echo "  (or just start a new session)"
 
 ## daemon: start the background message-capture daemon (logs incoming messages)
 daemon: build up

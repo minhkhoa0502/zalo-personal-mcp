@@ -178,6 +178,17 @@ npm run typecheck    # type-check only
 npm run audit:deps   # npm audit (runtime deps)
 ```
 
+After changing server code, rebuild and reconnect:
+
+```bash
+make rebuild         # rebuilds the image (+ recreates the daemon if running)
+```
+
+A **new** Claude Code session picks up the new image automatically. To update a
+**running** session (e.g. to see new/changed tools), reconnect the server —
+`/mcp` → select `zalo` → reconnect — since MCP clients read the tool list once at
+connect time.
+
 ## License
 
 [MIT](LICENSE)
