@@ -63,6 +63,8 @@ MCP tools are functional. The `zca-js@2.1.2` dependency has been audited
 | `zalo_mark_read` | Clear the unread marker on a thread |
 | `zalo_listen` | Open the realtime listener for a window; return incoming messages (live + on-connect backlog) |
 | `zalo_recent_messages` | Read messages captured by the background daemon (last N minutes) — the reliable "what did I miss?" |
+| `zalo_send_media` | Send a local image/file (from `./.zalo`) to a user or group |
+| `zalo_download_attachment` | Download a received attachment by URL into `./.zalo/inbox` |
 
 The surface is intentionally minimal to keep the attack surface small.
 

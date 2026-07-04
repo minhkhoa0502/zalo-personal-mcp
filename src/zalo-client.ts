@@ -8,6 +8,7 @@ import { HttpsProxyAgent } from "https-proxy-agent";
 import { Zalo, ThreadType, type API } from "zca-js";
 import { config } from "./config.js";
 import { loadSession } from "./session.js";
+import { imageMetadataGetter } from "./image-meta.js";
 
 export { ThreadType };
 export type ZaloApi = API;
@@ -31,6 +32,8 @@ export function buildZalo(opts?: { selfListen?: boolean }): Zalo {
     // zca-js drops them before emitting when this is false.
     selfListen: opts?.selfListen ?? false,
     agent,
+    // Needed to send images; zca-js has no built-in (its docs use `sharp`).
+    imageMetadataGetter,
   });
 }
 

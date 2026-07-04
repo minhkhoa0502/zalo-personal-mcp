@@ -39,7 +39,7 @@ catches a poisoned release.
 
 ### 4. Runtime containment (the real backstop)
 - **Egress allowlist** — the server may reach **only Zalo domains**
-  (`*.zalo.me`, `*.zadn.vn`, `*.zaloapp.com`, and Zalo CDN hosts). Enforced by
+  (`*.zalo.me`, `*.zadn.vn`, `*.zaloapp.com`, `*.zdn.vn`, and Zalo CDN hosts). Enforced by
   running in a container behind a firewall/proxy that blocks everything else.
   With this in place, a compromised dependency has **nowhere to send data**.
 - **Least privilege** — the process is given only its Zalo session store and

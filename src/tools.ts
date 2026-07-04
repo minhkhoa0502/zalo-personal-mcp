@@ -8,12 +8,22 @@
  * clear explanation for user threads instead of pretending to page history.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
 import { getApi, getListenerApi, toThreadType } from "./zalo-client.js";
 import { config } from "./config.js";
 import { readRecent, shapeMessage, logExists } from "./message-log.js";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** Directory bind-mounted into the container (holds session, log, media). */
+const dataDir = dirname(config.sessionPath);
+
+/** Resolve a user-supplied file path against the mounted data dir if relative. */
+function resolveDataPath(p: string): string {
+  return isAbsolute(p) ? p : resolve(dataDir, p);
+}
 
 type TextResult = {
   content: { type: "text"; text: string }[];
@@ -264,6 +274,111 @@ export function registerTools(server: McpServer): void {
           count: messages.length,
           messages,
         });
+      }),
+  );
+
+  server.registerTool(
+    "zalo_send_media",
+    {
+      title: "Send a Zalo image/file/voice",
+      description:
+        "Send a local file as an attachment (image, document, etc.) to a user or " +
+        "group. The file must be reachable inside the sandbox: place it in the " +
+        "mounted data dir (./.zalo) and pass a relative name, or an absolute " +
+        "container path. Relative paths resolve against the data dir.",
+      inputSchema: {
+        threadId: z.string().describe("Recipient id (user id or group id)"),
+        threadType: threadType,
+        filePath: z.string().describe("File to send (relative to ./.zalo, or absolute)"),
+        caption: z.string().optional().describe("Optional caption/text"),
+      },
+    },
+    ({ threadId, threadType: kind, filePath, caption }) =>
+      guard(async () => {
+        const api = await getApi();
+        const abs = resolveDataPath(filePath);
+        const ext = extname(abs).toLowerCase().slice(1);
+        const isImage = ["jpg", "jpeg", "png", "webp", "gif"].includes(ext);
+
+        const send = () =>
+          api.sendMessage({ msg: caption ?? "", attachments: [abs] }, threadId, toThreadType(kind));
+
+        // Images resolve without a listener. For files/videos, zca-js waits for
+        // a WebSocket upload-confirmation event, so we bring a transient
+        // listener up on this same context for the duration of the send.
+        if (isImage) {
+          return ok({ sent: abs, isImage, result: await send() });
+        }
+
+        await new Promise<void>((res, rej) => {
+          let done = false;
+          const timer = setTimeout(() => {
+            if (!done) {
+              done = true;
+              rej(new Error("listener did not connect within 15s"));
+            }
+          }, 15000);
+          api.listener.on("connected", () => {
+            if (!done) {
+              done = true;
+              clearTimeout(timer);
+              res();
+            }
+          });
+          api.listener.on("error", () => {
+            if (!done) {
+              done = true;
+              clearTimeout(timer);
+              rej(new Error("listener error while connecting"));
+            }
+          });
+          api.listener.start();
+        });
+        try {
+          return ok({ sent: abs, isImage, result: await send() });
+        } finally {
+          try {
+            api.listener.stop();
+          } catch {
+            /* ignore */
+          }
+        }
+      }),
+  );
+
+  server.registerTool(
+    "zalo_download_attachment",
+    {
+      title: "Download a received Zalo attachment",
+      description:
+        "Download an attachment by URL (the `href` from a message's content, e.g. " +
+        "from zalo_recent_messages) into ./.zalo/inbox and return the saved path. " +
+        "The session cookie is attached so protected Zalo CDN URLs work.",
+      inputSchema: {
+        url: z.string().url().describe("Attachment URL (href) from a message"),
+        filename: z.string().optional().describe("Save as this name (else derived from URL)"),
+      },
+    },
+    ({ url, filename }) =>
+      guard(async () => {
+        const api = await getApi();
+        let cookie = "";
+        try {
+          cookie = String(await api.getCookie());
+        } catch {
+          /* proceed without cookie */
+        }
+        const res = await fetch(url, {
+          headers: cookie ? { cookie } : {},
+        });
+        if (!res.ok) return fail(`Download failed: HTTP ${res.status} ${res.statusText}`);
+        const buf = Buffer.from(await res.arrayBuffer());
+        const inbox = join(dataDir, "inbox");
+        mkdirSync(inbox, { recursive: true });
+        const name = filename || basename(new URL(url).pathname) || "attachment";
+        const dest = join(inbox, name);
+        writeFileSync(dest, buf);
+        return ok({ savedTo: dest, bytes: buf.length });
       }),
   );
 }

@@ -11,7 +11,7 @@ compromised, it has **nowhere to send your Zalo session or messages**.
                  internal net (no gateway)        egress net (internet)
   ┌────────────┐   HTTPS_PROXY=egress-proxy:3128   ┌──────────────┐
   │  zalo-mcp  │ ───────────────────────────────▶ │ egress-proxy │ ──▶ *.zalo.me
-  └────────────┘                                   │   (squid)    │ ──▶ *.zadn.vn
+  └────────────┘                                   │   (squid)    │ ──▶ *.zadn.vn / *.zdn.vn
    no direct route out                             └──────────────┘ ──▶ *.zaloapp.com
                                                     denies everything else
 ```

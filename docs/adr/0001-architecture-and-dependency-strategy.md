@@ -130,7 +130,7 @@ small diffs on upgrade, and rely on the sandbox for everything we miss.
 - [x] Implement the minimal MCP tool surface: QR login → account_info →
       list_threads → get_messages (groups) → send_message → mark_read.
 - [x] Implement the egress-locked sandbox (container + Squid allowlist proxy) —
-      allowlist `.zalo.me`, `.zadn.vn`, `.zaloapp.com`. See `sandbox/`,
+      allowlist `.zalo.me`, `.zadn.vn`, `.zaloapp.com`, `.zdn.vn`. See `sandbox/`,
       `docker-compose.yml`, `Dockerfile`, and `sandbox/verify.sh`.
 - [x] Live DM listener support (`zalo_listen`) — WebSocket tunnelled through the
       Squid proxy via `HttpsProxyAgent` so it runs inside the sandbox. This is the
