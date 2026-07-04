@@ -431,4 +431,75 @@ export function registerTools(server: McpServer): void {
         return ok({ savedTo: dest, bytes: buf.length });
       }),
   );
+
+  server.registerTool(
+    "zalo_get_user_info",
+    {
+      title: "Get Zalo user profile(s)",
+      description: "Look up profile info for one or more user ids.",
+      inputSchema: {
+        userId: z.string().describe("User id, or comma-separated ids"),
+      },
+    },
+    ({ userId }) =>
+      guard(async () => {
+        const api = await getApi();
+        const ids = userId.includes(",") ? userId.split(",").map((s) => s.trim()) : userId;
+        return ok(await api.getUserInfo(ids));
+      }),
+  );
+
+  server.registerTool(
+    "zalo_find_user",
+    {
+      title: "Find a Zalo user by phone number",
+      description:
+        "Look up a user by phone number (e.g. 84... or 0...). Returns their public " +
+        "profile if found. Only works for numbers discoverable on Zalo.",
+      inputSchema: {
+        phone: z.string().describe("Phone number to look up"),
+      },
+    },
+    ({ phone }) =>
+      guard(async () => {
+        const api = await getApi();
+        return ok(await api.findUser(phone));
+      }),
+  );
+
+  server.registerTool(
+    "zalo_group_members",
+    {
+      title: "List a Zalo group's members",
+      description:
+        "Return member profiles for a group. Fetches the member list from the " +
+        "group info, then their profiles (chunked).",
+      inputSchema: {
+        groupId: z.string().describe("Group id (from zalo_list_threads)"),
+        limit: z.number().int().min(1).max(500).default(200).describe("Max members to resolve"),
+      },
+    },
+    ({ groupId, limit }) =>
+      guard(async () => {
+        const api = await getApi();
+        const info = await api.getGroupInfo(groupId);
+        const g = (info?.gridInfoMap ?? {})[groupId] as
+          | { name?: string; memVerList?: string[] }
+          | undefined;
+        const allIds = (g?.memVerList ?? []).map((x) => String(x).split("_")[0]);
+        const ids = allIds.slice(0, limit);
+        const profiles: Record<string, unknown> = {};
+        for (let i = 0; i < ids.length; i += 50) {
+          const r = await api.getGroupMembersInfo(ids.slice(i, i + 50));
+          Object.assign(profiles, r?.profiles ?? {});
+        }
+        return ok({
+          groupId,
+          name: g?.name,
+          totalMembers: allIds.length,
+          resolved: Object.keys(profiles).length,
+          members: profiles,
+        });
+      }),
+  );
 }

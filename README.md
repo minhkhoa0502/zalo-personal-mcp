@@ -66,6 +66,9 @@ MCP tools are functional. The `zca-js@2.1.2` dependency has been audited
 | `zalo_recent_messages` | Read messages captured by the background daemon (last N minutes) — the reliable "what did I miss?" |
 | `zalo_send_media` | Send a local image/file (from `./.zalo`) to a user or group |
 | `zalo_download_attachment` | Download a received attachment by URL into `./.zalo/inbox` |
+| `zalo_get_user_info` | Look up profile info for one or more user ids |
+| `zalo_find_user` | Find a user by phone number |
+| `zalo_group_members` | List a group's member profiles |
 
 The surface is intentionally minimal to keep the attack surface small.
 
