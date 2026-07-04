@@ -60,7 +60,7 @@ verified against a live account. The `zca-js@2.1.2` dependency has been audited
 |------|-------------|
 | `zalo_account_info` | Return the logged-in account's own profile |
 | `zalo_list_threads` | List friends (DMs) and groups, with their ids |
-| `zalo_get_messages` | Fetch recent **group** message history |
+| `zalo_get_messages` | Try group history (often 404s — prefer the daemon; see note below) |
 | `zalo_send_message` | Send a plain-text message; optionally quote/reply to a message |
 | `zalo_react` | Add an emoji reaction (HEART, LIKE, HAHA, …) to a message |
 | `zalo_mark_read` | Clear the unread marker on a thread |
@@ -108,15 +108,20 @@ make daemon-stop   # stop it
 Then `zalo_recent_messages` reads that log. Note: Zalo allows only one web
 listener per account, so **don't use `zalo_listen` while the daemon is running.**
 
-> [!NOTE]
-> **DM history is not fetchable.** The Zalo Web protocol only exposes history for
-> *groups* (`getGroupChatHistory`). One-to-one messages arrive through the
-> realtime listener, not a fetch endpoint. So `zalo_get_messages` supports groups
-> only, and **`zalo_listen`** is the way to read incoming DMs — it opens the
-> WebSocket listener for a fixed window and returns what arrives (plus the backlog
-> Zalo pushes on connect). The listener runs inside the sandbox by tunnelling its
-> WebSocket through the Squid proxy (`ws` uses an `http.Agent`, so we pass it an
-> `HttpsProxyAgent`).
+> [!IMPORTANT]
+> **Reading messages: use the daemon, not `zalo_get_messages`.** History fetch is
+> unreliable on Zalo Web: 1-1 DM history is never fetchable, and the group-history
+> endpoint (`getGroupChatHistory`) currently returns **404** (deprecated
+> server-side) — `zalo_get_messages` will tell you so. The reliable way to read
+> incoming messages is the **realtime listener**:
+> - **`make daemon`** runs a background listener that logs every incoming message
+>   to `.zalo/messages.jsonl`; query it with **`zalo_recent_messages`** (e.g. last
+>   N minutes). This is the only way to answer "what did I receive?" after the fact
+>   — it must already be running when the messages arrive.
+> - **`zalo_listen`** opens a one-off live window (no daemon needed).
+>
+> The listener runs inside the sandbox by tunnelling its WebSocket through the
+> Squid proxy (`ws` uses an `http.Agent`, so we pass it an `HttpsProxyAgent`).
 
 ## Setup
 

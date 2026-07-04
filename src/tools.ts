@@ -128,11 +128,13 @@ export function registerTools(server: McpServer): void {
   server.registerTool(
     "zalo_get_messages",
     {
-      title: "Get Zalo group message history",
+      title: "Get Zalo group message history (often unavailable)",
       description:
-        "Fetch recent messages from a GROUP thread. Note: the Zalo Web API only " +
-        "exposes history for groups; 1-1 DM history is not fetchable (it arrives " +
-        "via the realtime listener), so 'user' threads return an explanation.",
+        "Try to fetch a GROUP's message history. IMPORTANT: Zalo's group-history " +
+        "endpoint frequently returns 404 (deprecated server-side), and 1-1 DM " +
+        "history is never fetchable. To read messages reliably, run the daemon " +
+        "(`make daemon`) and use zalo_recent_messages, or zalo_listen for a live " +
+        "window. Only try this for groups.",
       inputSchema: {
         threadId: z.string().describe("Group id (from zalo_list_threads)"),
         threadType: threadType.default("group"),
@@ -143,14 +145,27 @@ export function registerTools(server: McpServer): void {
       guard(async () => {
         if (kind === "user") {
           return fail(
-            "The Zalo Web API does not expose fetchable history for 1-1 DMs. " +
-              "DM messages are only available live through the realtime listener. " +
-              "Group history is supported: call this tool with threadType='group'.",
+            "1-1 DM history is not fetchable via the Zalo Web API. Read DMs by " +
+              "running the daemon (make daemon) + zalo_recent_messages, or use " +
+              "zalo_listen for a live window.",
           );
         }
         const api = await getApi();
-        const history = await api.getGroupChatHistory(threadId, count);
-        return ok(history);
+        try {
+          return ok(await api.getGroupChatHistory(threadId, count));
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (/404/.test(msg)) {
+            return fail(
+              "Group history unavailable: Zalo returned 404 for this endpoint " +
+                "(it appears deprecated server-side; this affects all groups, not " +
+                "just this one). To read incoming messages instead, run the daemon " +
+                "(`make daemon`) and use zalo_recent_messages, or zalo_listen for a " +
+                "live window.",
+            );
+          }
+          throw err;
+        }
       }),
   );
 
