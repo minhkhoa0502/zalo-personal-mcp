@@ -11,11 +11,27 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
-import { getApi, getListenerApi, toThreadType } from "./zalo-client.js";
+import { getApi, getListenerApi, toThreadType, Reactions } from "./zalo-client.js";
 import { config } from "./config.js";
 import { readRecent, shapeMessage, logExists } from "./message-log.js";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+const reactionNames = Object.keys(Reactions) as (keyof typeof Reactions)[];
+
+/** Quoted-message shape accepted by zalo_send_message (from a message's `quote`). */
+const quoteSchema = z
+  .object({
+    content: z.any(),
+    msgType: z.string(),
+    propertyExt: z.any().optional(),
+    uidFrom: z.string(),
+    msgId: z.string(),
+    cliMsgId: z.string(),
+    ts: z.union([z.string(), z.number()]),
+    ttl: z.number().optional(),
+  })
+  .passthrough();
 
 /** Directory bind-mounted into the container (holds session, log, media). */
 const dataDir = dirname(config.sessionPath);
@@ -141,17 +157,51 @@ export function registerTools(server: McpServer): void {
     "zalo_send_message",
     {
       title: "Send a Zalo message",
-      description: "Send a plain-text message to a user (DM) or a group.",
+      description:
+        "Send a plain-text message to a user (DM) or a group. To reply/quote a " +
+        "message, pass its `quote` object (from zalo_recent_messages / zalo_listen).",
       inputSchema: {
         threadId: z.string().describe("Recipient id (user id or group id)"),
         threadType: threadType,
         message: z.string().min(1).describe("Message text to send"),
+        quote: quoteSchema.optional().describe("Message to reply to (its `quote` object)"),
       },
     },
-    ({ threadId, threadType: kind, message }) =>
+    ({ threadId, threadType: kind, message, quote }) =>
       guard(async () => {
         const api = await getApi();
-        const res = await api.sendMessage(message, threadId, toThreadType(kind));
+        const content = quote ? { msg: message, quote: quote as never } : message;
+        const res = await api.sendMessage(content, threadId, toThreadType(kind));
+        return ok(res);
+      }),
+  );
+
+  server.registerTool(
+    "zalo_react",
+    {
+      title: "React to a Zalo message",
+      description:
+        "Add an emoji reaction to a message. Needs the message's msgId and " +
+        "cliMsgId (both in zalo_recent_messages / zalo_listen output).",
+      inputSchema: {
+        threadId: z.string().describe("Thread the message is in"),
+        threadType: threadType,
+        msgId: z.string().describe("Target message msgId"),
+        cliMsgId: z.string().describe("Target message cliMsgId"),
+        reaction: z
+          .enum(reactionNames as [string, ...string[]])
+          .describe("Reaction name, e.g. HEART, LIKE, HAHA, WOW, CRY, ANGRY"),
+      },
+    },
+    ({ threadId, threadType: kind, msgId, cliMsgId, reaction }) =>
+      guard(async () => {
+        const api = await getApi();
+        const icon = Reactions[reaction as keyof typeof Reactions];
+        const res = await api.addReaction(icon, {
+          threadId,
+          type: toThreadType(kind),
+          data: { msgId, cliMsgId },
+        });
         return ok(res);
       }),
   );

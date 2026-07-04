@@ -59,7 +59,8 @@ MCP tools are functional. The `zca-js@2.1.2` dependency has been audited
 | `zalo_account_info` | Return the logged-in account's own profile |
 | `zalo_list_threads` | List friends (DMs) and groups, with their ids |
 | `zalo_get_messages` | Fetch recent **group** message history |
-| `zalo_send_message` | Send a plain-text message to a user or group |
+| `zalo_send_message` | Send a plain-text message; optionally quote/reply to a message |
+| `zalo_react` | Add an emoji reaction (HEART, LIKE, HAHA, …) to a message |
 | `zalo_mark_read` | Clear the unread marker on a thread |
 | `zalo_listen` | Open the realtime listener for a window; return incoming messages (live + on-connect backlog) |
 | `zalo_recent_messages` | Read messages captured by the background daemon (last N minutes) — the reliable "what did I miss?" |

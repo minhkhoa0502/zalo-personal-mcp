@@ -5,12 +5,12 @@
  */
 import type { Agent } from "node:http";
 import { HttpsProxyAgent } from "https-proxy-agent";
-import { Zalo, ThreadType, type API } from "zca-js";
+import { Zalo, ThreadType, Reactions, type API } from "zca-js";
 import { config } from "./config.js";
 import { loadSession } from "./session.js";
 import { imageMetadataGetter } from "./image-meta.js";
 
-export { ThreadType };
+export { ThreadType, Reactions };
 export type ZaloApi = API;
 
 let cached: ZaloApi | null = null;

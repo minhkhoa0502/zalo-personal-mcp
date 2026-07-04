@@ -18,6 +18,18 @@ import { ThreadType } from "./zalo-client.js";
 const MAX_BYTES = 5 * 1024 * 1024; // trim when the log grows past ~5 MB
 const KEEP_LINES = 5000; // …down to the most recent N lines
 
+/** Fields needed to quote/reply to a message (zca-js SendMessageQuote shape). */
+export interface QuoteRef {
+  content: unknown;
+  msgType?: string;
+  propertyExt?: unknown;
+  uidFrom?: string;
+  msgId?: string;
+  cliMsgId?: string;
+  ts?: string;
+  ttl?: number;
+}
+
 export interface LoggedMessage {
   /** ms epoch when we captured it (fallback ordering key). */
   loggedAt: number;
@@ -30,7 +42,11 @@ export interface LoggedMessage {
   /** Zalo message timestamp (ms as string), when present. */
   ts?: string;
   msgId?: string;
+  /** Needed together with msgId to react to this message. */
+  cliMsgId?: string;
   content: unknown;
+  /** Pass this straight to zalo_send_message's `quote` to reply to it. */
+  quote: QuoteRef;
 }
 
 /** Convert a zca-js listener Message into our compact log record. */
@@ -50,7 +66,18 @@ export function shapeMessage(
     fromName: d.dName,
     ts: d.ts,
     msgId: d.msgId,
+    cliMsgId: d.cliMsgId,
     content: d.content,
+    quote: {
+      content: d.content,
+      msgType: d.msgType,
+      propertyExt: d.propertyExt,
+      uidFrom: d.uidFrom,
+      msgId: d.msgId,
+      cliMsgId: d.cliMsgId,
+      ts: d.ts,
+      ttl: d.ttl,
+    },
   };
 }
 
