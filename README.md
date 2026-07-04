@@ -48,8 +48,10 @@ See [SECURITY.md](SECURITY.md). The short version:
 
 ## Status
 
-✅ **Working — first tools implemented.** QR login + session persistence and five
-MCP tools are functional. The `zca-js@2.1.2` dependency has been audited
+✅ **Working.** QR login + encrypted session, an egress-locked Docker sandbox, a
+background message-capture daemon, and **28 MCP tools** (messaging, media,
+reactions, lookups, group/friend management, conversation controls) — all
+verified against a live account. The `zca-js@2.1.2` dependency has been audited
 ([report](docs/audit/zca-js-2.1.2.md)).
 
 ## MCP tools

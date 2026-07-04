@@ -54,6 +54,29 @@ catches a poisoned release.
   excludes common session/secret file patterns.
 - Prefer a disposable/secondary Zalo account for automation.
 
+## The message-capture daemon
+
+The optional `zalo-daemon` service (`make daemon`) is a second long-running
+component that holds the Zalo listener and appends incoming messages to a log.
+Its security posture:
+
+- **Same containment as the server** — it runs on the internal-only network and
+  reaches Zalo solely through the Squid allowlist proxy; it has the same session
+  access and no more.
+- **The message log is stored in PLAINTEXT** at `.zalo/messages.jsonl` — unlike
+  the session, message *content* is **not** encrypted at rest. Anyone who can
+  read the `.zalo` directory can read your captured messages. It stays inside the
+  bind-mounted `.zalo` dir (git-ignored) and is size-capped, but treat it as
+  sensitive: don't copy it elsewhere, and delete it (`rm .zalo/messages.jsonl`)
+  if you don't want a local history. Set `ZALO_SELF_LISTEN=false` (default) to
+  avoid logging your own outbound messages.
+
+## Mutating tools
+
+Several tools change real state (send/unfriend, group membership, mute/pin).
+Some are irreversible (unfriend, remove member). The MCP client's permission
+prompts are your gate — review arguments before approving.
+
 ## Reporting a vulnerability
 
 Open a private security advisory on this repository, or contact the maintainer

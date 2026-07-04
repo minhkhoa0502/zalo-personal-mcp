@@ -135,3 +135,9 @@ small diffs on upgrade, and rely on the sandbox for everything we miss.
 - [x] Live DM listener support (`zalo_listen`) — WebSocket tunnelled through the
       Squid proxy via `HttpsProxyAgent` so it runs inside the sandbox. This is the
       only way to read incoming DMs (no DM history fetch endpoint exists).
+- [x] Expand the tool surface beyond the minimal set — now **28 tools** plus a
+      persistent message-capture daemon (media, reactions/quote, lookups,
+      group/friend management, conversation controls). Each new tool is a thin,
+      audited wrapper over `zca-js`; mutating tools are gated by the client's
+      permission prompts. Note: the daemon's message log is plaintext at rest
+      (see SECURITY.md).
