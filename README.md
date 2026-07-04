@@ -204,8 +204,13 @@ Point your client at the built server. Example (`.mcp.json` / Claude Desktop
 ```bash
 npm run dev          # tsc --watch
 npm run typecheck    # type-check only
+npm test             # offline regression tests (image parser, log filters)
 npm run audit:deps   # npm audit (runtime deps)
 ```
+
+`npm test` covers the pure logic that can run without a live account (the image
+header parser and message-log filtering). Tool/network behaviour is verified
+live against a real Zalo account.
 
 After changing server code, rebuild and reconnect:
 
