@@ -149,7 +149,12 @@ only acts while the Docker daemon is already running. Agent logs: `.zalo/autosta
 
 ## Setup
 
-Requires Node.js ≥ 20.
+Runs on Node.js ≥ 22; the Docker image uses **Node 24** (current Active LTS) by
+default. To build against a private registry/mirror, set `NODE_IMAGE`:
+
+```bash
+NODE_IMAGE=reg.mini.dev/node:v24.18.0 docker compose build
+```
 
 ```bash
 npm install          # installs pinned deps + writes package-lock.json (integrity hashes)

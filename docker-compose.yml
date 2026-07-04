@@ -29,7 +29,11 @@ services:
       retries: 3
 
   zalo-mcp:
-    build: .
+    build:
+      context: .
+      args:
+        # Override to a private mirror, e.g. NODE_IMAGE=reg.mini.dev/node:v24.18.0
+        NODE_IMAGE: ${NODE_IMAGE:-node:24-alpine}
     # Shared image tag so zalo-mcp and zalo-daemon never run divergent builds —
     # one `docker compose build` updates both.
     image: zalo-personal-mcp:local
@@ -54,7 +58,10 @@ services:
   # message to /app/.zalo/messages.jsonl. Optional — start with `make daemon`.
   # Only one web listener per account, so don't run zalo_listen while this is up.
   zalo-daemon:
-    build: .
+    build:
+      context: .
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:-node:24-alpine}
     image: zalo-personal-mcp:local # same image as zalo-mcp (see note above)
     depends_on:
       - egress-proxy

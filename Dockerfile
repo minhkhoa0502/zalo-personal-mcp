@@ -1,5 +1,10 @@
+# Base image is overridable so you can point at a private mirror/registry
+# (e.g. NODE_IMAGE=reg.mini.dev/node:v24.18.0). Default is public Docker Hub so
+# the repo builds for anyone. Node 24 = current Active LTS (EOL Apr 2028).
+ARG NODE_IMAGE=node:24-alpine
+
 # --- build stage: compile TypeScript ---------------------------------------
-FROM node:22-alpine AS build
+FROM ${NODE_IMAGE} AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 # npm ci installs exactly the pinned, integrity-checked lockfile.
@@ -9,7 +14,7 @@ COPY src ./src
 RUN npm run build
 
 # --- runtime stage: only prod deps + compiled output -----------------------
-FROM node:22-alpine AS runtime
+FROM ${NODE_IMAGE} AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
