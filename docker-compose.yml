@@ -33,7 +33,7 @@ services:
     build:
       context: .
       args:
-        # Override to a private mirror, e.g. NODE_IMAGE=reg.mini.dev/node:v24.18.0
+        # Override to a private mirror, e.g. NODE_IMAGE=reg.mini.dev/node:24.18.0
         NODE_IMAGE: ${NODE_IMAGE:-node:24-alpine}
     # Shared image tag so zalo-mcp and zalo-daemon never run divergent builds —
     # one `docker compose build` updates both.
