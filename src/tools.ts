@@ -11,6 +11,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
+import { MuteAction } from "zca-js";
 import { getApi, getListenerApi, toThreadType, Reactions } from "./zalo-client.js";
 import { config } from "./config.js";
 import { readRecent, shapeMessage, logExists } from "./message-log.js";
@@ -710,6 +711,86 @@ export function registerTools(server: McpServer): void {
           ? await api.changeFriendAlias(alias, userId)
           : await api.removeFriendAlias(userId);
         return ok({ cleared: alias.length === 0, result: res });
+      }),
+  );
+
+  // --- Conversation controls (your own view; reversible) --------------------
+
+  server.registerTool(
+    "zalo_mute",
+    {
+      title: "Mute or unmute a Zalo conversation",
+      description: "Mute (silence notifications) or unmute a thread. Affects only your account.",
+      inputSchema: {
+        threadId: z.string().describe("Thread id"),
+        threadType: threadType,
+        mute: z.boolean().default(true).describe("true = mute, false = unmute"),
+      },
+    },
+    ({ threadId, threadType: kind, mute }) =>
+      guard(async () => {
+        const api = await getApi();
+        const res = await api.setMute(
+          { action: mute ? MuteAction.MUTE : MuteAction.UNMUTE },
+          threadId,
+          toThreadType(kind),
+        );
+        return ok({ muted: mute, result: res });
+      }),
+  );
+
+  server.registerTool(
+    "zalo_pin",
+    {
+      title: "Pin or unpin a Zalo conversation",
+      description: "Pin or unpin a thread in your conversation list.",
+      inputSchema: {
+        threadId: z.string().describe("Thread id"),
+        threadType: threadType,
+        pinned: z.boolean().default(true).describe("true = pin, false = unpin"),
+      },
+    },
+    ({ threadId, threadType: kind, pinned }) =>
+      guard(async () => {
+        const api = await getApi();
+        const res = await api.setPinnedConversations(pinned, threadId, toThreadType(kind));
+        return ok({ pinned, result: res });
+      }),
+  );
+
+  server.registerTool(
+    "zalo_archive",
+    {
+      title: "Archive or unarchive a Zalo conversation",
+      description: "Move a thread to/from the archived chat list.",
+      inputSchema: {
+        threadId: z.string().describe("Thread id"),
+        threadType: threadType,
+        archived: z.boolean().default(true).describe("true = archive, false = unarchive"),
+      },
+    },
+    ({ threadId, threadType: kind, archived }) =>
+      guard(async () => {
+        const api = await getApi();
+        const res = await api.updateArchivedChatList(archived, {
+          id: threadId,
+          type: toThreadType(kind),
+        });
+        return ok({ archived, result: res });
+      }),
+  );
+
+  server.registerTool(
+    "zalo_get_labels",
+    {
+      title: "Get Zalo conversation labels",
+      description: "List your conversation labels (folders) and their members.",
+      inputSchema: {},
+    },
+    () =>
+      guard(async () => {
+        const api = await getApi();
+        return ok(await api.getLabels());
       }),
   );
 }

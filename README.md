@@ -80,6 +80,10 @@ MCP tools are functional. The `zca-js@2.1.2` dependency has been audited
 | `zalo_accept_friend_request` | Accept a pending friend request |
 | `zalo_remove_friend` | Unfriend a user |
 | `zalo_set_friend_alias` | Set or clear a friend's alias |
+| `zalo_mute` | Mute/unmute a conversation |
+| `zalo_pin` | Pin/unpin a conversation |
+| `zalo_archive` | Archive/unarchive a conversation |
+| `zalo_get_labels` | List your conversation labels |
 
 > [!CAUTION]
 > The group/friend tools **mutate real contacts and groups** and some are
