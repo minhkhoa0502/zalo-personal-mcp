@@ -13,9 +13,10 @@ networks:
 services:
   # Zalo-only allowlist forward proxy. This is the security boundary.
   egress-proxy:
+    # Overridable (e.g. PROXY_IMAGE=reg.mini.dev/squid:7.6). Default is public.
     # Pin to a digest after first pull for reproducibility:
-    #   docker compose pull egress-proxy && docker inspect --format '{{index .RepoDigests 0}}' ubuntu/squid:6.6-24.04_edge
-    image: ubuntu/squid:6.6-24.04_edge
+    #   docker compose pull egress-proxy && docker inspect --format '{{index .RepoDigests 0}}' <image>
+    image: ${PROXY_IMAGE:-ubuntu/squid:6.6-24.04_edge}
     restart: unless-stopped
     volumes:
       - ./sandbox/squid.conf:/etc/squid/squid.conf:ro
