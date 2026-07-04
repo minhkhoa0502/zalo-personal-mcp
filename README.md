@@ -105,8 +105,32 @@ make daemon-logs   # watch it
 make daemon-stop   # stop it
 ```
 
-Then `zalo_recent_messages` reads that log. Note: Zalo allows only one web
-listener per account, so **don't use `zalo_listen` while the daemon is running.**
+Then `zalo_recent_messages` reads that log. Two caveats: Zalo allows only one web
+listener per account, so **don't use `zalo_listen` while the daemon is running**;
+and the daemon only captures messages that arrive **while it is running** — it
+cannot recover history from before it started (there is no history-fetch API).
+
+#### Start the daemon at login (macOS)
+
+So capture survives reboots, install a LaunchAgent:
+
+```bash
+make autostart-install     # LaunchAgent that starts the daemon at login
+make autostart-uninstall   # remove it
+```
+
+The agent waits for Docker, then starts the proxy + daemon. The session
+passphrase is read from the **macOS Keychain** (never stored in the plist), from
+service `zalo-personal-mcp-session-key`:
+
+```bash
+security add-generic-password -U -a "$USER" -s zalo-personal-mcp-session-key -w 'YOUR_PASSPHRASE'
+```
+
+**Also enable Docker Desktop → Settings → General → "Start Docker Desktop when you
+sign in"** — otherwise the agent waits (up to ~5 min) until Docker is up.
+`restart: unless-stopped` alone is **not** enough to survive a reboot, because it
+only acts while the Docker daemon is already running. Agent logs: `.zalo/autostart.log`.
 
 > [!IMPORTANT]
 > **Reading messages: use the daemon, not `zalo_get_messages`.** History fetch is

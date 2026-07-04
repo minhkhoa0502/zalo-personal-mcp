@@ -1,5 +1,8 @@
 .DEFAULT_GOAL := help
-.PHONY: help build up login verify rebuild daemon daemon-logs daemon-stop down logs clean
+.PHONY: help build up login verify rebuild daemon daemon-logs daemon-stop \
+        autostart-install autostart-uninstall down logs clean
+
+AUTOSTART_PLIST := $(HOME)/Library/LaunchAgents/com.zalo-personal-mcp.daemon.plist
 
 ## help: list available targets
 help:
@@ -46,6 +49,16 @@ daemon-logs:
 ## daemon-stop: stop the message-capture daemon
 daemon-stop:
 	docker compose stop zalo-daemon
+
+## autostart-install: run the daemon at macOS login (LaunchAgent; passphrase from Keychain)
+autostart-install:
+	bash sandbox/install-autostart.sh
+
+## autostart-uninstall: remove the login autostart
+autostart-uninstall:
+	launchctl unload "$(AUTOSTART_PLIST)" 2>/dev/null || true
+	rm -f "$(AUTOSTART_PLIST)"
+	@echo "removed $(AUTOSTART_PLIST)"
 
 ## logs: tail the egress-proxy (Squid) logs
 logs:
